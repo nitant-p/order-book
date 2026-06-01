@@ -54,6 +54,30 @@ TEST_F(OrderBookSideBuyTest, AddOrderCreatesPriceLevelAndIndexEntry) {
     expectLevelIntegrity(side, 100, {1}, 10U);
 }
 
+TEST(OrderBookSidePoolGrowthTest, AddOrderGrowsPoolAndKeepsExistingOrderPointersValid) {
+    OrderNodePool pool{1};
+    OrderBookSide side{Side::BUY, pool};
+
+    side.addOrder(1, Side::BUY, Type::LIMIT, 100, 10);
+    const Order* firstOrder = side.findOrder(1);
+    ASSERT_NE(firstOrder, nullptr);
+
+    side.addOrder(2, Side::BUY, Type::LIMIT, 100, 20);
+    side.addOrder(3, Side::BUY, Type::LIMIT, 100, 30);
+
+    EXPECT_EQ(pool.capacity(), 4U);
+    EXPECT_EQ(pool.activeCount(), 3U);
+    EXPECT_EQ(pool.availableCount(), 1U);
+    EXPECT_EQ(side.findOrder(1), firstOrder);
+    expectLevelIntegrity(side, 100, {1, 2, 3}, 60U);
+
+    EXPECT_TRUE(side.deleteOrderById(2));
+
+    EXPECT_EQ(pool.activeCount(), 2U);
+    EXPECT_EQ(pool.availableCount(), 2U);
+    expectLevelIntegrity(side, 100, {1, 3}, 40U);
+}
+
 TEST_F(OrderBookSideBuyTest, DuplicateIdAndMismatchedSideAreIgnored) {
     side.addOrder(1, Side::BUY, Type::LIMIT, 100, 10);
     side.addOrder(1, Side::BUY, Type::LIMIT, 101, 20);

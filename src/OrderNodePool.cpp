@@ -7,24 +7,32 @@
 
 using namespace std;
 
-OrderNodePool::OrderNodePool(std::size_t capacity): capacity_(capacity) {
-   nodes_ = std::make_unique<OrderNode[]>(capacity);
-   freeNodes_ = vector<OrderNode*>(capacity);
-   inUse_ = vector<bool>(capacity);
+OrderNodePool::OrderNodePool(std::size_t capacity): totalCapacity_(capacity) {
+   chunks_.push_back(std::make_unique<OrderNode[]>(capacity));
+   chunkSizes_.push_back(capacity);
+   inUseByChunk_.push_back(vector<bool>(capacity));
+
+   freeNodes_ = vector<OrderNode*>(capacity); // default is nullptr
+
+   auto& firstChunk = chunks_[0];
    for (size_t i = 0; i < capacity; ++i) {
-      nodes_[i].poolIndex = i;
-      freeNodes_[i] = &nodes_[i];
-      inUse_[i] = false;
+
+      firstChunk[i].globalChunkIndex = chunkTotal_;
+      firstChunk[i].localChunkIndex = i;
+
+      freeNodes_[i] = &firstChunk[i];
+      inUseByChunk_[0][i] = false;
    }
+   ++chunkTotal_;
 }
 
 OrderNodePool::~OrderNodePool() = default;
 
 OrderNode* OrderNodePool::acquire(const Order &order) {
-   if (freeNodes_.empty()) return nullptr;
+   if (freeNodes_.empty()) doublePoolSize();
 
    OrderNode* nodePtr = freeNodes_.back();
-   assert(!inUse_[nodePtr->poolIndex]);
+   assert(!inUseByChunk_[nodePtr->globalChunkIndex][nodePtr->localChunkIndex]);
 
    nodePtr->order = order;
    nodePtr->next = nullptr;
@@ -32,7 +40,7 @@ OrderNode* OrderNodePool::acquire(const Order &order) {
    nodePtr->priceLevel = nullptr;
 
    freeNodes_.pop_back();
-   inUse_[nodePtr->poolIndex] = true;
+   inUseByChunk_[nodePtr->globalChunkIndex][nodePtr->localChunkIndex] = true;
    ++activeCount_;
 
    return nodePtr;
@@ -42,14 +50,14 @@ bool OrderNodePool::release(OrderNode* node) {
    if (node == nullptr) return false;
    if (!owns(node)) return false;
 
-   size_t index = node->poolIndex;
-   if (index >= capacity_) return false;
+   size_t globalI = node->globalChunkIndex;
+   size_t localI = node->localChunkIndex;
 
-   if (!inUse_[index]) return false;
+   if (!inUseByChunk_[globalI][localI]) return false;
 
    resetNode(*node);
 
-   inUse_[index] = false;
+   inUseByChunk_[globalI][localI] = false;
    --activeCount_;
 
    freeNodes_.push_back(node);
@@ -58,12 +66,12 @@ bool OrderNodePool::release(OrderNode* node) {
 
 bool OrderNodePool::owns(const OrderNode* node) const noexcept {
    if (node == nullptr) return false;
-   if (nodes_ == nullptr) return false;
+   if (chunks_.empty()) return false;
 
-   const OrderNode* start = nodes_.get();
-   const OrderNode* end = start + capacity_;
+   if (node->globalChunkIndex >= chunkTotal_) return false;
+   if (node->localChunkIndex >= chunkSizes_[node->globalChunkIndex]) return false;
 
-   return node >= start && node < end;
+   return node == &chunks_[node->globalChunkIndex][node->localChunkIndex];
 }
 
 void OrderNodePool::resetNode(OrderNode& node) noexcept {
@@ -73,12 +81,35 @@ void OrderNodePool::resetNode(OrderNode& node) noexcept {
    node.priceLevel = nullptr;
 }
 
+void OrderNodePool::doublePoolSize() {
+   size_t doubleCapacity = totalCapacity_ * 2;
+   // handle 0 capacity
+   if (doubleCapacity == 0) doubleCapacity = 1;
+   size_t increase = doubleCapacity - totalCapacity_;
+
+   chunks_.push_back(std::make_unique<OrderNode[]>(increase));
+   chunkSizes_.push_back(increase);
+   freeNodes_.reserve(freeNodes_.size() + increase);
+   inUseByChunk_.push_back(vector<bool>(increase, false));
+
+   auto& lastChunk = chunks_.back();
+   // adding new elements from capacity -> double capacity
+   for (size_t i = 0; i < increase; ++i) {
+      lastChunk[i].globalChunkIndex = chunkTotal_;
+      lastChunk[i].localChunkIndex = i;
+      freeNodes_.push_back(&lastChunk[i]);
+   }
+
+   totalCapacity_ = doubleCapacity;
+   ++chunkTotal_;
+}
+
 bool OrderNodePool::hasAvailable() const noexcept {
-   return capacity_ - activeCount_ > 0;
+   return !freeNodes_.empty();
 }
 
 std::size_t OrderNodePool::capacity() const noexcept {
-   return capacity_;
+   return totalCapacity_;
 }
 
 std::size_t OrderNodePool::activeCount() const noexcept {
@@ -86,6 +117,6 @@ std::size_t OrderNodePool::activeCount() const noexcept {
 }
 
 std::size_t OrderNodePool::availableCount() const noexcept {
-   return capacity_ - activeCount_;
+   return freeNodes_.size();
 }
 

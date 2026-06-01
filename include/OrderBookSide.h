@@ -19,12 +19,14 @@ struct LevelSnapshot {
 
 struct PriceLevel;
 
+// default values for default constructor
 struct OrderNode {
     Order order;
     OrderNode* prev = nullptr;
     OrderNode* next = nullptr;
     PriceLevel* priceLevel = nullptr;
-    size_t poolIndex = 0;
+    size_t globalChunkIndex = 0;
+    size_t localChunkIndex = 0;
 };
 
 struct PriceLevel {
@@ -90,6 +92,6 @@ private:
     // Price -> linked list of orders at that price
     std::map<int, PriceLevel> priceToLevels_;
 
-    // Order ID -> owning pointer to actual order node
+    // Order ID -> borrowed order node owned by OrderNodePool
     std::unordered_map<uint64_t, OrderNode*> orderNodesById_;
 };

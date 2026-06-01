@@ -30,10 +30,13 @@ public:
 
 private:
     void resetNode(OrderNode& node) noexcept;
+    void doublePoolSize();
 
-    std::unique_ptr<OrderNode[]> nodes_;
+    std::vector<std::unique_ptr<OrderNode[]>> chunks_;
+    std::vector<std::size_t> chunkSizes_;
     std::vector<OrderNode*> freeNodes_;
-    std::vector<bool> inUse_;
-    std::size_t capacity_ = 0;
+    std::vector<std::vector<bool>> inUseByChunk_;
+    std::size_t totalCapacity_ = 0;
     std::size_t activeCount_ = 0;
+    std::size_t chunkTotal_ = 0;
 };
