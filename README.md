@@ -9,7 +9,10 @@ This project implements a central limit order book (CLOB) with deterministic mat
 
 ## Core Features
 - Supports `BUY` and `SELL` sides.
-- Supports `LIMIT` and `MARKET` order types.
+- Supports `LIMIT`, `MARKET`, and `IOC` order types.
+  - `LIMIT`: match immediately while prices cross; rest any remaining quantity.
+  - `MARKET`: match available liquidity at the best prices; discard any unfilled remainder.
+  - `IOC`: match immediately like a limit order; cancel any unfilled remainder instead of resting.
 - Enforces price-time priority within price levels (FIFO queue per level).
 - Multi-level matching across the book until fill or stop condition.
 - Best-price execution:
@@ -23,7 +26,7 @@ This project implements a central limit order book (CLOB) with deterministic mat
   - `cancelOrder(orderId)`.
   - `modifyOrder(orderId, newPrice, newQuantity)`.
 - Trade capture per processed order (returns `std::vector<Trade>`).
-- Dynamic memory pool for Order creation. Reduces overhead incurred when creating objects on the go.
+- Dynamic memory pool for reusable `OrderNode` storage. This reduces hot-path allocation overhead while keeping active node pointers stable across pool growth.
 
 ## Architecture and Complexity
 - Matching engine: [`MatchingEngine.h`](./include/MatchingEngine.h), [`MatchingEngine.cpp`](./src/MatchingEngine.cpp)
@@ -60,7 +63,14 @@ Let `P` be the number of price levels on one side of the book, `N` be the number
 | Price-change modify | O(log P) | Removes from one level and finds or creates another. |
 | `getBestOrder` | O(log P) | Current implementation resolves the best price, then looks up that level. |
 | `getDepth(D)` | O(min(D, P)) | Walks price levels until the requested depth is filled. |
-| `processOrder` | O(M log P) worst case | Each match consumes or updates one resting order; a remaining limit order add is O(log P). |
+| `processOrder` | O(M log P) worst case | Each match consumes or updates one resting order; a remaining `LIMIT` add is O(log P). `MARKET` and `IOC` leftovers do not rest. |
+
+### Dynamic Memory Pooling
+`OrderNodePool` owns all `OrderNode` storage used by both sides of the book. `MatchingEngine` creates one shared pool, and each `OrderBookSide` borrows nodes from it when orders rest in the book.
+
+The pool starts with the capacity passed to `MatchingEngine`. When all slots are active, it allocates another chunk and doubles total capacity. Existing chunks are never moved, so active `OrderNode*` pointers held by price levels and `orderNodesById_` remain valid after growth.
+
+Cancels, exact fills, and deletes release nodes back to the pool. Released nodes have their links and `PriceLevel` pointer cleared before reuse, which prevents old queue state from leaking into later orders.
 
 ## Build
 ```bash
@@ -82,7 +92,7 @@ ctest --test-dir build --output-on-failure
 The suite is organized by behavior category:
 
 - `BestMatchingBySideTest`: best-price matching and price-time behavior for buy/sell matching loops.
-- `OrderTypeBehaviorTest`: limit vs market semantics and liquidity edge cases.
+- `OrderTypeBehaviorTest`: limit, market, and IOC semantics plus liquidity edge cases.
 - `CancelOrderTest`: cancel API behavior, queue cleanup, and non-mutation guarantees.
 - `ModifyOrderTest`: modify API behavior, priority impacts, and invalid input handling.
 - `OrderIdBehaviorTest`: engine-generated monotonic/unique order ID behavior.

@@ -103,6 +103,112 @@ TEST_F(OrderTypeBehaviorTest, LimitOrderWithInsufficientLiquidityRestsRemainingQ
     EXPECT_EQ(levelIds(engine.getBuyBook(), 100), std::vector<uint64_t>({2}));
 }
 
+TEST_F(OrderTypeBehaviorTest, IocBuyWithNoLiquidityDoesNotRestInBook) {
+    const std::vector<Trade> trades = engine.processOrder(Side::BUY, Type::IOC, 100, 10); // id 1
+
+    EXPECT_TRUE(trades.empty());
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_TRUE(engine.getSellOrders().empty());
+    EXPECT_FALSE(engine.cancelOrder(1));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocSellWithNoLiquidityDoesNotRestInBook) {
+    const std::vector<Trade> trades = engine.processOrder(Side::SELL, Type::IOC, 100, 10); // id 1
+
+    EXPECT_TRUE(trades.empty());
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_TRUE(engine.getSellOrders().empty());
+    EXPECT_FALSE(engine.cancelOrder(1));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocBuyDoesNotRestWhenBestAskDoesNotCross) {
+    engine.processOrder(Side::SELL, Type::LIMIT, 105, 4); // id 1
+
+    const std::vector<Trade> trades = engine.processOrder(Side::BUY, Type::IOC, 100, 4); // id 2
+
+    EXPECT_TRUE(trades.empty());
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_EQ(levelIds(engine.getSellOrders(), 105), std::vector<uint64_t>({1}));
+    EXPECT_FALSE(engine.cancelOrder(2));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocBuyPartiallyFillsAndDiscardsRemainder) {
+    engine.processOrder(Side::SELL, Type::LIMIT, 100, 3); // id 1
+
+    const std::vector<Trade> trades = engine.processOrder(Side::BUY, Type::IOC, 100, 10); // id 2
+
+    ASSERT_EQ(trades.size(), 1U);
+    EXPECT_EQ(trades[0].buyOrderId, 2U);
+    EXPECT_EQ(trades[0].sellOrderId, 1U);
+    EXPECT_EQ(trades[0].executionPrice, 100);
+    EXPECT_EQ(trades[0].executionQuantity, 3);
+
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_TRUE(engine.getSellOrders().empty());
+    EXPECT_FALSE(engine.cancelOrder(2));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocBuyPartialFillLeavesRestingOrderRemainder) {
+    engine.processOrder(Side::SELL, Type::LIMIT, 100, 10); // id 1
+
+    const std::vector<Trade> trades = engine.processOrder(Side::BUY, Type::IOC, 100, 4); // id 2
+
+    ASSERT_EQ(trades.size(), 1U);
+    EXPECT_EQ(trades[0].buyOrderId, 2U);
+    EXPECT_EQ(trades[0].sellOrderId, 1U);
+    EXPECT_EQ(trades[0].executionPrice, 100);
+    EXPECT_EQ(trades[0].executionQuantity, 4);
+
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_EQ(levelIds(engine.getSellOrders(), 100), std::vector<uint64_t>({1}));
+    EXPECT_EQ(engine.getSellOrders().volumeAtPrice(100), 6U);
+    EXPECT_FALSE(engine.cancelOrder(2));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocBuySweepsCrossingLevelsThenStopsAtPriceLimit) {
+    engine.processOrder(Side::SELL, Type::LIMIT, 100, 2); // id 1
+    engine.processOrder(Side::SELL, Type::LIMIT, 101, 3); // id 2
+    engine.processOrder(Side::SELL, Type::LIMIT, 103, 4); // id 3
+
+    const std::vector<Trade> trades = engine.processOrder(Side::BUY, Type::IOC, 101, 10); // id 4
+
+    ASSERT_EQ(trades.size(), 2U);
+    EXPECT_EQ(trades[0].sellOrderId, 1U);
+    EXPECT_EQ(trades[0].executionPrice, 100);
+    EXPECT_EQ(trades[0].executionQuantity, 2);
+
+    EXPECT_EQ(trades[1].sellOrderId, 2U);
+    EXPECT_EQ(trades[1].executionPrice, 101);
+    EXPECT_EQ(trades[1].executionQuantity, 3);
+
+    EXPECT_TRUE(engine.getBuyBook().empty());
+    EXPECT_TRUE(levelIds(engine.getSellOrders(), 100).empty());
+    EXPECT_TRUE(levelIds(engine.getSellOrders(), 101).empty());
+    EXPECT_EQ(levelIds(engine.getSellOrders(), 103), std::vector<uint64_t>({3}));
+}
+
+TEST_F(OrderTypeBehaviorTest, IocSellSweepsCrossingLevelsThenStopsAtPriceLimit) {
+    engine.processOrder(Side::BUY, Type::LIMIT, 103, 2); // id 1
+    engine.processOrder(Side::BUY, Type::LIMIT, 102, 3); // id 2
+    engine.processOrder(Side::BUY, Type::LIMIT, 100, 4); // id 3
+
+    const std::vector<Trade> trades = engine.processOrder(Side::SELL, Type::IOC, 102, 10); // id 4
+
+    ASSERT_EQ(trades.size(), 2U);
+    EXPECT_EQ(trades[0].buyOrderId, 1U);
+    EXPECT_EQ(trades[0].executionPrice, 103);
+    EXPECT_EQ(trades[0].executionQuantity, 2);
+
+    EXPECT_EQ(trades[1].buyOrderId, 2U);
+    EXPECT_EQ(trades[1].executionPrice, 102);
+    EXPECT_EQ(trades[1].executionQuantity, 3);
+
+    EXPECT_TRUE(engine.getSellOrders().empty());
+    EXPECT_TRUE(levelIds(engine.getBuyBook(), 103).empty());
+    EXPECT_TRUE(levelIds(engine.getBuyBook(), 102).empty());
+    EXPECT_EQ(levelIds(engine.getBuyBook(), 100), std::vector<uint64_t>({3}));
+}
+
 TEST_F(OrderTypeBehaviorTest, MarketVsLimitAtSameQuantityBehaveDifferentlyWhenPriceDoesNotCross) {
     engine.processOrder(Side::SELL, Type::LIMIT, 110, 4); // id 1
 

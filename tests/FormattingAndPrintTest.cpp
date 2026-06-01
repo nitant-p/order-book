@@ -52,6 +52,10 @@ TEST(FormattingTest, OrderStreamFormatsSideAndTypeVariants) {
     std::ostringstream sellMarket;
     sellMarket << Order{2, Side::SELL, Type::MARKET, 0, 5};
     EXPECT_EQ(sellMarket.str(), "Order{id=2, side=SELL, type=MARKET, price=0, quantity=5}");
+
+    std::ostringstream buyIoc;
+    buyIoc << Order{3, Side::BUY, Type::IOC, 101, 6};
+    EXPECT_EQ(buyIoc.str(), "Order{id=3, side=BUY, type=IOC, price=101, quantity=6}");
 }
 
 TEST(FormattingTest, SideStreamFormatsBothSides) {

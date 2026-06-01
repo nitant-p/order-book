@@ -11,7 +11,16 @@ std::string sideToString(Side side) {
 }
 
 std::string typeToString(Type type) {
-    return type == Type::LIMIT ? "LIMIT" : "MARKET";
+    switch (type) {
+        case Type::LIMIT:
+            return "LIMIT";
+        case Type::MARKET:
+            return "MARKET";
+        case Type::IOC:
+            return "IOC";
+    }
+
+    return "UNKNOWN";
 }
 
 // sort by ascending price, id for tie-breaker

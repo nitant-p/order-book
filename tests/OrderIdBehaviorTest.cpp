@@ -34,3 +34,11 @@ TEST_F(OrderIdBehaviorTest, IdUniquenessPreservedAfterCancelAndNewOrder) {
 
     EXPECT_EQ(levelIds(engine.getBuyBook(), 99), std::vector<uint64_t>({2}));
 }
+
+TEST_F(OrderIdBehaviorTest, IocOrderConsumesIdButDoesNotCreateCancellableRestingOrder) {
+    engine.processOrder(Side::BUY, Type::IOC, 100, 5);   // id 1, not resting
+    engine.processOrder(Side::BUY, Type::LIMIT, 99, 4);  // id 2
+
+    EXPECT_FALSE(engine.cancelOrder(1));
+    EXPECT_EQ(levelIds(engine.getBuyBook(), 99), std::vector<uint64_t>({2}));
+}

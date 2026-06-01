@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <ostream>
 enum class Side {BUY, SELL};
-enum class Type {LIMIT, MARKET};
+enum class Type {LIMIT, MARKET, IOC};
 
 // default values for default constructor
 struct Order {

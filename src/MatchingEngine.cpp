@@ -138,7 +138,7 @@ vector<Trade> MatchingEngine::processBuyOrder(Order &newOrder) {
 
     auto best = this->sellBook.bestPrice();
     if (!best) {
-        if (newOrder.type != Type::MARKET and newOrder.quantity > 0) {
+        if (newOrder.type == Type::LIMIT and newOrder.quantity > 0) {
             this->addNewOrder(Side::BUY, newOrder);
         }
         return tradeList;
@@ -158,7 +158,7 @@ vector<Trade> MatchingEngine::processBuyOrder(Order &newOrder) {
         bestSellPrice = *best;
     }
 
-    if (newOrder.type != Type::MARKET and newOrder.quantity > 0) this->addNewOrder(Side::BUY, newOrder);
+    if (newOrder.type == Type::LIMIT and newOrder.quantity > 0) this->addNewOrder(Side::BUY, newOrder);
 
     return tradeList;
 }
@@ -168,7 +168,7 @@ vector<Trade> MatchingEngine::processSellOrder(Order &newOrder) {
 
     auto best = this->buyBook.bestPrice();
     if (!best) {
-        if (newOrder.type != Type::MARKET and newOrder.quantity > 0) {
+        if (newOrder.type == Type::LIMIT and newOrder.quantity > 0) {
             this->addNewOrder(Side::SELL, newOrder);
         }
         return tradeList;
@@ -188,7 +188,7 @@ vector<Trade> MatchingEngine::processSellOrder(Order &newOrder) {
         bestBuyPrice = *best;
     }
 
-    if (newOrder.type != Type::MARKET and newOrder.quantity > 0) this->addNewOrder(Side::SELL, newOrder);
+    if (newOrder.type == Type::LIMIT and newOrder.quantity > 0) this->addNewOrder(Side::SELL, newOrder);
 
     return tradeList;
 }
