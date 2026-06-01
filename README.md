@@ -23,6 +23,7 @@ This project implements a central limit order book (CLOB) with deterministic mat
   - `cancelOrder(orderId)`.
   - `modifyOrder(orderId, newPrice, newQuantity)`.
 - Trade capture per processed order (returns `std::vector<Trade>`).
+- Dynamic memory pool for Order creation. Reduces overhead incurred when creating objects on the go.
 
 ## Architecture and Complexity
 - Matching engine: [`MatchingEngine.h`](./include/MatchingEngine.h), [`MatchingEngine.cpp`](./src/MatchingEngine.cpp)
@@ -30,7 +31,9 @@ This project implements a central limit order book (CLOB) with deterministic mat
 - Trade model: [`Trade.h`](./include/Trade.h)
 - Test suite: `tests/` (category-based fixtures)
 
-The engine owns two independent order books, one for bids and one for asks. The engine handles order processing, matching, cancellation, modification, trade capture, and ID-side routing; each `OrderBookSide` owns its own price levels and borrows active order nodes from a shared `OrderNodePool`.
+The engine owns two independent order books, one for bids and one for asks. The engine handles order processing, matching, cancellation, modification, trade capture, and ID-side routing. Each `OrderBookSide` owns its own price levels and borrows active order nodes from a shared `OrderNodePool`.
+
+The shared pool will allocate Orders ahead of time and then provide the objects when needed. It will automatically double in size when capacity is full.
 
 ![Matching engine architecture](./docs/architecture/matching-engine-architecture.svg)
 
