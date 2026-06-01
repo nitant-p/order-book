@@ -32,15 +32,15 @@ This project implements a central limit order book (CLOB) with deterministic mat
 
 The engine owns two independent order books, one for bids and one for asks. The engine handles order processing, matching, cancellation, modification, trade capture, and ID-side routing; each `OrderBookSide` owns its own price levels and borrows active order nodes from a shared `OrderNodePool`.
 
-![Matching engine architecture](./docs/architecture/matching-engine-architecture.png)
+![Matching engine architecture](./docs/architecture/matching-engine-architecture.svg)
 
 Each order book stores price levels in `std::map<int, PriceLevel>`. Conceptually this is an ordered binary tree keyed by price. A `PriceLevel` stores aggregate level metadata and points to the head and tail of its FIFO order-node queue.
 
-![Price level tree](./docs/architecture/price-level-tree.png)
+![Price level tree](./docs/architecture/price-level-tree.svg)
 
 Each order book also stores active orders by ID in `std::unordered_map<uint64_t, OrderNode*>`. The map indexes borrowed nodes; `OrderNodePool` owns the reusable node storage. The nodes link to each other as a doubly linked list, and each node points back to its `PriceLevel`.
 
-![Order linked list](./docs/architecture/order-linked-list.png)
+![Order linked list](./docs/architecture/order-linked-list.svg)
 
 ### Operation Complexity
 Let `P` be the number of price levels on one side of the book, `N` be the number of active orders, `D` be the requested depth size, and `M` be the number of resting orders matched by an incoming order.
