@@ -107,7 +107,13 @@ if(BUILD_TESTING)
     gtest_discover_tests(matching_engine_tests)
 
     if(ENABLE_COVERAGE)
+        add_custom_command(TARGET matching_engine_tests PRE_LINK
+            COMMAND ${CMAKE_SOURCE_DIR}/scripts/reset_coverage_counters.sh ${CMAKE_BINARY_DIR}
+            COMMENT "Reset stale gcov counters before linking coverage tests"
+        )
+
         add_custom_target(coverage
+            COMMAND ${CMAKE_SOURCE_DIR}/scripts/reset_coverage_counters.sh ${CMAKE_BINARY_DIR}
             COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
             COMMAND ${CMAKE_SOURCE_DIR}/scripts/generate_coverage.sh ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

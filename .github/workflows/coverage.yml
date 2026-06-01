@@ -45,17 +45,14 @@ jobs:
 
           summary_path = pathlib.Path("build-coverage/coverage/coverage_summary.txt")
           text = summary_path.read_text(encoding="utf-8")
-          matches = re.findall(r"Lines executed:([0-9]+(?:\.[0-9]+)?)% of ([0-9]+)", text)
+          match = re.search(
+              r"Overall source coverage:\s+([0-9]+(?:\.[0-9]+)?)%\s+lines\s+\((\d+)/(\d+)\)",
+              text,
+          )
+          if not match:
+              raise RuntimeError(f"Could not parse coverage summary:\n{text}")
 
-          weighted = 0.0
-          total_lines = 0
-          for pct_str, lines_str in matches:
-              pct = float(pct_str)
-              lines = int(lines_str)
-              weighted += pct * lines
-              total_lines += lines
-
-          coverage = (weighted / total_lines) if total_lines else 0.0
+          coverage = float(match.group(1))
 
           if coverage >= 90:
               color = "brightgreen"

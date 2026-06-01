@@ -22,6 +22,7 @@ mkdir -p "${BUILD_DIR}/coverage"
 pushd "${BUILD_DIR}/coverage" >/dev/null
 
 echo "Generating gcov reports from: ${OBJ_DIR}"
+rm -f ./*.gcov
 : > coverage_raw.txt
 : > coverage_summary.txt
 
