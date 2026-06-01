@@ -1,0 +1,43 @@
+flowchart TB
+    Engine["MatchingEngine"]
+
+    subgraph EngineState["Engine state and APIs"]
+        Process["processOrder()"]
+        Cancel["cancelOrder()"]
+        Modify["modifyOrder()"]
+        Trades["tradeHistory"]
+        SideIndex["orderIdSide: unordered_map&lt;id, Side&gt;"]
+    end
+
+    Pool["sharedOrderPool_: OrderNodePool<br/>owns reusable OrderNode storage"]
+
+    subgraph PoolStorage["Pool-owned storage"]
+        Chunks["chunks_: vector&lt;unique_ptr&lt;OrderNode[]&gt;&gt;"]
+        FreeList["freeNodes_"]
+        Counts["activeCount() / availableCount()"]
+    end
+
+    BuyBook["buyBook: OrderBookSide(BUY)"]
+    SellBook["sellBook: OrderBookSide(SELL)"]
+
+    subgraph BuyState["Buy book state"]
+        BuyLevels["priceToLevels_: map&lt;int, PriceLevel&gt;"]
+        BuyIndex["orderNodesById_: unordered_map&lt;id, OrderNode*&gt;"]
+    end
+
+    subgraph SellState["Sell book state"]
+        SellLevels["priceToLevels_: map&lt;int, PriceLevel&gt;"]
+        SellIndex["orderNodesById_: unordered_map&lt;id, OrderNode*&gt;"]
+    end
+
+    Engine --> EngineState
+    Engine --> BuyBook
+    Engine --> SellBook
+    Engine --> Pool
+    Pool --> PoolStorage
+    BuyBook --> BuyState
+    SellBook --> SellState
+    BuyBook -. "acquire/release" .-> Pool
+    SellBook -. "acquire/release" .-> Pool
+    BuyIndex -. "borrowed pointers" .-> Chunks
+    SellIndex -. "borrowed pointers" .-> Chunks

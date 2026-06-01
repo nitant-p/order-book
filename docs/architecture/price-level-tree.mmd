@@ -1,0 +1,21 @@
+flowchart TB
+    Pool["shared OrderNodePool<br/>owns OrderNode chunks"]
+    Map["priceToLevels_: map&lt;int, PriceLevel&gt;"]
+    Root["price 100"]
+    Left["price 99"]
+    Right["price 101"]
+    FarRight["price 103"]
+    Level["PriceLevel<br/>orderCount<br/>totalQuantity<br/>head: OrderNode*<br/>tail: OrderNode*"]
+    First["OrderNode<br/>borrowed from pool"]
+    Last["OrderNode<br/>borrowed from pool"]
+
+    Map --> Root
+    Root --"left"--> Left
+    Root --"right"--> Right
+    Right --"right"--> FarRight
+
+    Root -. "map value" .-> Level
+    Level --"head"--> First
+    Level --"tail"--> Last
+    Pool -. "owns storage" .-> First
+    Pool -. "owns storage" .-> Last

@@ -1,0 +1,45 @@
+flowchart LR
+    Pool["shared OrderNodePool"]
+
+    subgraph Chunks["Pool-owned chunks"]
+        Chunk0["chunk 0<br/>unique_ptr&lt;OrderNode[]&gt;"]
+        Chunk1["chunk 1<br/>unique_ptr&lt;OrderNode[]&gt;"]
+    end
+
+    IdMap["orderNodesById_: unordered_map&lt;uint64_t, OrderNode*&gt;"]
+    Id1["id 41"]
+    Id2["id 42"]
+    Id3["id 43"]
+
+    subgraph Queue["FIFO order nodes at one price"]
+        N1["OrderNode<br/>order id 41"]
+        N2["OrderNode<br/>order id 42"]
+        N3["OrderNode<br/>order id 43"]
+
+        N1 -- "next" --> N2
+        N2 -- "prev" --> N1
+        N2 -- "next" --> N3
+        N3 -- "prev" --> N2
+    end
+
+    Level["PriceLevel"]
+    Head["head"]
+    Tail["tail"]
+
+    Pool --> Chunks
+    Chunk0 -. "contains" .-> N1
+    Chunk0 -. "contains" .-> N2
+    Chunk1 -. "contains" .-> N3
+
+    IdMap --> Id1
+    IdMap --> Id2
+    IdMap --> Id3
+    Id1 -. "OrderNode*" .-> N1
+    Id2 -. "OrderNode*" .-> N2
+    Id3 -. "OrderNode*" .-> N3
+
+    N2 -. "priceLevel" .-> Level
+    Level --> Head
+    Level --> Tail
+    Head --> N1
+    Tail --> N3

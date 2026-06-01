@@ -1,0 +1,64 @@
+layer,api,case,scale,ns_per_op,ops_per_sec,finding
+MatchingEngine,processOrder,Add-only limit orders,1000,84.9,11786828,"Resting-only inserts acquire reusable OrderNode slots, then update price levels and order-ID indexing."
+MatchingEngine,processOrder,Add-only limit orders,10000,80.6,12414569,"Resting-only inserts acquire reusable OrderNode slots, then update price levels and order-ID indexing."
+MatchingEngine,processOrder,Add-only limit orders,100000,99.3,10069314,"Resting-only inserts acquire reusable OrderNode slots, then update price levels and order-ID indexing."
+MatchingEngine,processOrder,Add-only limit orders,1000000,120.0,8331167,"Resting-only inserts acquire reusable OrderNode slots, then update price levels and order-ID indexing."
+MatchingEngine,processOrder,Match-heavy market buys,1000,81.9,12210588,Matching releases filled resting nodes back to the shared pool while incoming market orders avoid resting.
+MatchingEngine,processOrder,Match-heavy market buys,10000,101.9,9834204,Matching releases filled resting nodes back to the shared pool while incoming market orders avoid resting.
+MatchingEngine,processOrder,Match-heavy market buys,100000,128.7,7769193,Matching releases filled resting nodes back to the shared pool while incoming market orders avoid resting.
+MatchingEngine,processOrder,Match-heavy market buys,1000000,208.1,4804687,Matching releases filled resting nodes back to the shared pool while incoming market orders avoid resting.
+MatchingEngine,processOrder,Mixed limits and markets,1000,112.4,8893564,"Mixed flow combines passive adds, fills, and node-slot reuse."
+MatchingEngine,processOrder,Mixed limits and markets,10000,124.6,8028424,"Mixed flow combines passive adds, fills, and node-slot reuse."
+MatchingEngine,processOrder,Mixed limits and markets,100000,123.1,8126784,"Mixed flow combines passive adds, fills, and node-slot reuse."
+MatchingEngine,processOrder,Mixed limits and markets,1000000,160.3,6242199,"Mixed flow combines passive adds, fills, and node-slot reuse."
+MatchingEngine,cancelOrder,Existing resting orders,1000,55.5,18035240,Cancel unlinks the order and returns its reusable node slot to the pool.
+MatchingEngine,cancelOrder,Existing resting orders,10000,63.8,15742907,Cancel unlinks the order and returns its reusable node slot to the pool.
+MatchingEngine,cancelOrder,Existing resting orders,100000,63.5,15736340,Cancel unlinks the order and returns its reusable node slot to the pool.
+MatchingEngine,cancelOrder,Existing resting orders,1000000,95.6,10469544,Cancel unlinks the order and returns its reusable node slot to the pool.
+MatchingEngine,modifyOrder,Same-price quantity reduction,1000,42.2,23710670,Same-price quantity reduction keeps the same node and queue position.
+MatchingEngine,modifyOrder,Same-price quantity reduction,10000,51.1,19568484,Same-price quantity reduction keeps the same node and queue position.
+MatchingEngine,modifyOrder,Same-price quantity reduction,100000,59.2,16883860,Same-price quantity reduction keeps the same node and queue position.
+MatchingEngine,modifyOrder,Same-price quantity reduction,1000000,65.9,15167831,Same-price quantity reduction keeps the same node and queue position.
+MatchingEngine,modifyOrder,Price change,1000,55.5,18024515,Price changes relink the existing node into another price level without reallocating it.
+MatchingEngine,modifyOrder,Price change,10000,60.0,16676088,Price changes relink the existing node into another price level without reallocating it.
+MatchingEngine,modifyOrder,Price change,100000,67.0,14923549,Price changes relink the existing node into another price level without reallocating it.
+MatchingEngine,modifyOrder,Price change,1000000,75.8,13197490,Price changes relink the existing node into another price level without reallocating it.
+OrderBookSide,addOrder,Direct side insert,1000,42.3,23649569,Direct insertion acquires nodes from the shared pool and skips engine orchestration.
+OrderBookSide,addOrder,Direct side insert,10000,47.6,21031645,Direct insertion acquires nodes from the shared pool and skips engine orchestration.
+OrderBookSide,addOrder,Direct side insert,100000,42.4,23603925,Direct insertion acquires nodes from the shared pool and skips engine orchestration.
+OrderBookSide,addOrder,Direct side insert,1000000,45.0,22235467,Direct insertion acquires nodes from the shared pool and skips engine orchestration.
+OrderBookSide,bestPrice,Best price read,1000,43.6,22932601,Best-price reads are mostly independent of node allocation strategy.
+OrderBookSide,bestPrice,Best price read,10000,8.3,120772159,Best-price reads are mostly independent of node allocation strategy.
+OrderBookSide,bestPrice,Best price read,100000,4.7,213289262,Best-price reads are mostly independent of node allocation strategy.
+OrderBookSide,bestPrice,Best price read,1000000,4.4,227691700,Best-price reads are mostly independent of node allocation strategy.
+OrderBookSide,getBestOrder,Best order pointer read,1000,47.0,21286109,Best-order reads return the head pointer at the best level.
+OrderBookSide,getBestOrder,Best order pointer read,10000,10.9,91888076,Best-order reads return the head pointer at the best level.
+OrderBookSide,getBestOrder,Best order pointer read,100000,7.3,136474943,Best-order reads return the head pointer at the best level.
+OrderBookSide,getBestOrder,Best order pointer read,1000000,7.0,142572942,Best-order reads return the head pointer at the best level.
+OrderBookSide,findOrder,Existing ID lookup,1000,18.4,54394845,Average O(1) ID lookup returns a borrowed node pointer owned by the pool.
+OrderBookSide,findOrder,Existing ID lookup,10000,21.1,47503738,Average O(1) ID lookup returns a borrowed node pointer owned by the pool.
+OrderBookSide,findOrder,Existing ID lookup,100000,19.0,52711506,Average O(1) ID lookup returns a borrowed node pointer owned by the pool.
+OrderBookSide,findOrder,Existing ID lookup,1000000,20.1,49764945,Average O(1) ID lookup returns a borrowed node pointer owned by the pool.
+OrderBookSide,deleteOrderById,Existing ID delete,1000,29.6,33735268,Delete unlinks the node and returns its slot to the pool.
+OrderBookSide,deleteOrderById,Existing ID delete,10000,35.8,27956273,Delete unlinks the node and returns its slot to the pool.
+OrderBookSide,deleteOrderById,Existing ID delete,100000,35.1,28529804,Delete unlinks the node and returns its slot to the pool.
+OrderBookSide,deleteOrderById,Existing ID delete,1000000,40.0,25017193,Delete unlinks the node and returns its slot to the pool.
+OrderBookSide,reduceOrderQuantity,Partial reduction,1000,19.7,50655578,"Partial reduction keeps the order resting, so no pool release is needed."
+OrderBookSide,reduceOrderQuantity,Partial reduction,10000,23.2,43150870,"Partial reduction keeps the order resting, so no pool release is needed."
+OrderBookSide,reduceOrderQuantity,Partial reduction,100000,19.3,51925506,"Partial reduction keeps the order resting, so no pool release is needed."
+OrderBookSide,reduceOrderQuantity,Partial reduction,1000000,19.7,50852029,"Partial reduction keeps the order resting, so no pool release is needed."
+OrderBookSide,reduceOrderQuantity,Exact fill,1000,31.4,31885552,Exact fill unlinks the order and recycles its node slot.
+OrderBookSide,reduceOrderQuantity,Exact fill,10000,34.3,29145377,Exact fill unlinks the order and recycles its node slot.
+OrderBookSide,reduceOrderQuantity,Exact fill,100000,36.5,27421269,Exact fill unlinks the order and recycles its node slot.
+OrderBookSide,reduceOrderQuantity,Exact fill,1000000,43.3,23105895,Exact fill unlinks the order and recycles its node slot.
+OrderBookSide,modifyOrder,Same-price quantity reduction,1000,19.5,51276665,Same-price modification preserves node identity and queue position.
+OrderBookSide,modifyOrder,Same-price quantity reduction,10000,21.9,45642801,Same-price modification preserves node identity and queue position.
+OrderBookSide,modifyOrder,Same-price quantity reduction,100000,19.9,50152691,Same-price modification preserves node identity and queue position.
+OrderBookSide,modifyOrder,Same-price quantity reduction,1000000,21.1,47418292,Same-price modification preserves node identity and queue position.
+OrderBookSide,modifyOrder,Price change,1000,32.4,30901303,Price-change modification relinks the same node into another price level.
+OrderBookSide,modifyOrder,Price change,10000,30.7,32539355,Price-change modification relinks the same node into another price level.
+OrderBookSide,modifyOrder,Price change,100000,27.6,36181438,Price-change modification relinks the same node into another price level.
+OrderBookSide,modifyOrder,Price change,1000000,28.8,34782707,Price-change modification relinks the same node into another price level.
+OrderBookSide,getDepth,Depth 10,1000,232.4,4308858,Depth reads are dominated by level traversal and snapshot materialization.
+OrderBookSide,getDepth,Depth 100,1000,540.1,1852536,Depth reads are dominated by level traversal and snapshot materialization.
+OrderBookSide,getDepth,Depth 1000,1000,3941.8,253807,Depth reads are dominated by level traversal and snapshot materialization.
