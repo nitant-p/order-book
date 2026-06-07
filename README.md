@@ -72,6 +72,18 @@ The pool starts with the capacity passed to `MatchingEngine`. When all slots are
 
 Cancels, exact fills, and deletes release nodes back to the pool. Released nodes have their links and `PriceLevel` pointer cleared before reuse, which prevents old queue state from leaking into later orders.
 
+In benchmark runs, fixed-capacity pooling improved mean latency by about 29% across the rows directly comparable with the original V1 baseline. The current dynamic pool keeps most of that gain while allowing growth: it improved mean latency by about 27% versus V1, and was about 1.8% slower than the fixed pool in steady-state comparisons because release/ownership checks now account for chunks.
+
+Selected 10k latency comparisons:
+
+| Case | V1 ns/op | Dynamic pool ns/op | Improvement |
+| --- | ---: | ---: | ---: |
+| MatchingEngine add-only `processOrder` | 126.1 | 80.6 | 36.1% faster |
+| MatchingEngine `cancelOrder` | 92.4 | 63.8 | 31.0% faster |
+| OrderBookSide `addOrder` | 70.8 | 47.6 | 32.8% faster |
+| OrderBookSide exact-fill reduction | 48.6 | 34.3 | 29.4% faster |
+| OrderBookSide same-price modify | 38.2 | 21.9 | 42.7% faster |
+
 ## Build
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
